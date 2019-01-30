@@ -7,20 +7,16 @@ import (
 
 func (rtm *RememberTheMilk) GetList() error {
 
-	spew.Dump(rtm)
-	spew.Dump(rtm.apiToken)
+	lists := &ListResponse{}
 
-	mv, err := rtm.Req("rtm.lists.getList")
-	if err != nil {
+	//spew.Dump(rtm)
+	//spew.Dump(rtm.apiToken)
+
+	if err := rtm.Req("rtm.lists.getList", lists); err != nil {
 		return errors.Wrap(err, "failed req")
 	}
 
-	v, err := mv.ValueForPathString("rsp")
-	if err != nil {
-		return errors.Wrap(err, "Failed to get value")
-	}
-
-	spew.Dump(v)
+	spew.Dump(lists)
 
 	return nil
 }

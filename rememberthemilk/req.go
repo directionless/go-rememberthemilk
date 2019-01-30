@@ -1,12 +1,11 @@
 package rememberthemilk
 
 import (
+	"encoding/xml"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 
-	"github.com/clbanning/mxj"
 	"github.com/pkg/errors"
 )
 
@@ -29,6 +28,10 @@ func Param(k, v string) reqOpt {
 	}
 }
 
+type genericResponse struct {
+	Stat string `xml:"stat,attr"`
+}
+
 // Response format
 //
 // While the docs [1] nominally claim to support json, there are
@@ -43,7 +46,7 @@ func Param(k, v string) reqOpt {
 // [1] https://www.rememberthemilk.com/services/api/response.rtm
 // [2] https://groups.google.com/forum/#!searchin/rememberthemilk-api/objects%7Csort:date/rememberthemilk-api/aNegBdRtw5E
 
-func (rtm *RememberTheMilk) Req(method string, opts ...reqOpt) (mxj.Map, error) {
+func (rtm *RememberTheMilk) Req(method string, obj interface{}, opts ...reqOpt) error {
 	reqOpts := &reqOptions{
 		Params: &url.Values{},
 	}
@@ -54,14 +57,14 @@ func (rtm *RememberTheMilk) Req(method string, opts ...reqOpt) (mxj.Map, error) 
 
 	urlPath, err := url.Parse("services/rest")
 	if err != nil {
-		return nil, errors.Wrap(err, "URL failure")
+		return errors.Wrap(err, "URL failure")
 	}
 
 	url := rtm.baseUrl.ResolveReference(urlPath)
 
 	req, err := http.NewRequest("GET", url.String(), nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create http req")
+		return errors.Wrap(err, "failed to create http req")
 	}
 
 	reqOpts.Params.Add("method", method)
@@ -89,29 +92,38 @@ func (rtm *RememberTheMilk) Req(method string, opts ...reqOpt) (mxj.Map, error) 
 
 	resp, err := rtm.httpClient.Do(req)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed fetch http req")
+		return errors.Wrap(err, "failed fetch http req")
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
-
-	// FIXME: Do we need something like io.CopyN here?
-	// Probably depends on whether the xml decoder takes the stream or a string.
+	// body, err := ioutil.ReadAll(resp.Body)
+	// TODO need something to ensure this is all consumed for pipelining
 
 	if resp.StatusCode != 200 {
-		return nil, errors.Errorf("API request not successful. Got status %d", resp.StatusCode)
+		return errors.Errorf("API request not successful. Got status %d", resp.StatusCode)
 	}
 
-	mv, err := mxj.NewMapXml(body) // unmarshal
-	if err != nil {
-		return nil, errors.Wrap(err, "failed xml unmarshal")
-	}
-	mv.Remove("rsp.api_key")
-
-	status, _ := mv.ValueForPathString("rsp.-stat")
-	if status != "ok" {
-		return nil, errors.Errorf("API xml response not OK: %s\n", body)
+	if err := xml.NewDecoder(resp.Body).Decode(obj); err != nil {
+		return errors.Wrap(err, "xml unmarshall")
 	}
 
-	return mv, nil
+	/*
+			mv, err := mxj.NewMapXml(body) // unmarshal
+			if err != nil {
+				return nil, errors.Wrap(err, "failed xml unmarshal")
+			}
+			mv.Remove("rsp.api_key")
+
+
+		status, _ := mv.ValueForPathString("rsp.-stat")
+		if status != "ok" {
+			return nil, errors.Errorf("API xml response not OK: %s\n", body)
+		}
+	*/
+
+	//if obj.(genericResponse).Stat != "ok" {
+	//	return errors.Errorf("API xml response not OK: %s\n", resp.Body)
+	//}
+
+	return nil
 }

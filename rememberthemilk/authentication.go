@@ -12,7 +12,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
 )
 
@@ -38,18 +37,13 @@ func (rtm *RememberTheMilk) Authenticate() error {
 }
 
 func (rtm *RememberTheMilk) getToken() error {
-	mv, err := rtm.Req("rtm.auth.getToken", Param("frob", rtm.apiFrob))
-	if err != nil {
+	resp := &GetTokenResponse{}
+	if err := rtm.Req("rtm.auth.getToken", resp, Param("frob", rtm.apiFrob)); err != nil {
 		return errors.Wrap(err, "failed to get token")
 	}
 
 	//fmt.Println(mv)
-	token, err := mv.ValueForPathString("rsp.auth.token")
-	if err != nil {
-		spew.Dump(mv)
-		return errors.Wrap(err, "Failed to get value")
-	}
-	rtm.apiToken = token
+	rtm.apiToken = resp.Auth.Token
 
 	return nil
 
@@ -114,17 +108,10 @@ func (rtm *RememberTheMilk) signAuthReq(req *http.Request) string {
 // getFrob calls the RTM api to get a frob.
 // (eg: a token)
 func (rtm *RememberTheMilk) getFrob() error {
-	// Get the frob (we mean token)
-	mv, err := rtm.Req("rtm.auth.getFrob")
-	if err != nil {
-		return errors.Wrap(err, "failed to get frob")
+	resp := &GetFrobResponse{}
+	if err := rtm.Req("rtm.auth.getFrob", resp); err != nil {
+		return errors.Wrap(err, "failed to get token")
 	}
-	frob, err := mv.ValueForPathString("rsp.frob")
-	if err != nil {
-		return errors.Wrap(err, "Failed to get frob")
-	}
-
-	rtm.apiFrob = frob
-
+	rtm.apiFrob = resp.Frob
 	return nil
 }

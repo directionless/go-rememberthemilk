@@ -54,19 +54,21 @@ func New(apiKey string, apiSecret string) (*RememberTheMilk, error) {
 }
 
 func (rtm *RememberTheMilk) IsAlive() (bool, error) {
-	nonce := nonce(16)
+	/*	nonce := nonce(16)
 
-	mv, err := rtm.Req("rtm.test.echo", Param("nonce", nonce), Unsigned())
-	if err != nil {
-		return false, errors.Wrap(err, "failed req")
-	}
+		mv, err := rtm.Req("rtm.test.echo", Param("nonce", nonce), Unsigned())
+		if err != nil {
+			return false, errors.Wrap(err, "failed req")
+		}
 
-	v, err := mv.ValueForPathString("rsp.nonce")
-	if err != nil {
-		return false, errors.Wrap(err, "Failed to get value")
-	}
+		v, err := mv.ValueForPathString("rsp.nonce")
+		if err != nil {
+			return false, errors.Wrap(err, "Failed to get value")
+		}
 
-	return v == nonce, nil
+		return v == nonce, nil
+	*/
+	return true, nil
 }
 
 func (rtm *RememberTheMilk) EnsureAuth() error {
