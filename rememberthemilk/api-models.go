@@ -1,26 +1,46 @@
 package rememberthemilk
 
-import "encoding/xml"
+import (
+	"encoding/xml"
 
-type ListResponse struct {
+	"github.com/pkg/errors"
+)
+
+type ResponseInterface interface {
+	HasError() error
+}
+
+type ResponseObject struct {
 	XMLName xml.Name `xml:"rsp"`
 
-	Stat  string `xml:"stat,attr"`
-	Lists []List `xml:"lists>list"` // Uses the nested structure to
-	// collapse this a little.
+	Stat  string        `xml:"stat,attr"`
+	Error ResponseError `xml:"err"`
+}
+
+type ResponseError struct {
+	Code string `xml:"code,attr"`
+	Msg  string `xml:"msg,attr"`
+}
+
+func (ro *ResponseObject) HasError() error {
+	if ro.Stat != "ok" {
+		return errors.New(ro.Error.Msg)
+	}
+	return nil
+}
+
+type ListResponse struct {
+	*ResponseObject
+	Lists []List `xml:"lists>list"` // Uses the nested structure to collapse these attributes
 }
 
 type GetTokenResponse struct {
-	XMLName xml.Name `xml:"rsp"`
-
-	Stat string `xml:"stat,attr"`
-	Auth Auth   `xml:"auth"`
+	*ResponseObject
+	Auth Auth `xml:"auth"`
 }
 
 type GetFrobResponse struct {
-	XMLName xml.Name `xml:"rsp"`
-
-	Stat string `xml:"stat,attr"`
+	*ResponseObject
 	Frob string `xml:"frob"`
 }
 

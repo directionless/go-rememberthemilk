@@ -28,10 +28,6 @@ func Param(k, v string) reqOpt {
 	}
 }
 
-type genericResponse struct {
-	Stat string `xml:"stat,attr"`
-}
-
 // Response format
 //
 // While the docs [1] nominally claim to support json, there are
@@ -46,7 +42,7 @@ type genericResponse struct {
 // [1] https://www.rememberthemilk.com/services/api/response.rtm
 // [2] https://groups.google.com/forum/#!searchin/rememberthemilk-api/objects%7Csort:date/rememberthemilk-api/aNegBdRtw5E
 
-func (rtm *RememberTheMilk) Req(method string, obj interface{}, opts ...reqOpt) error {
+func (rtm *RememberTheMilk) Req(method string, obj ResponseInterface, opts ...reqOpt) error {
 	reqOpts := &reqOptions{
 		Params: &url.Values{},
 	}
@@ -96,9 +92,6 @@ func (rtm *RememberTheMilk) Req(method string, obj interface{}, opts ...reqOpt) 
 	}
 	defer resp.Body.Close()
 
-	// body, err := ioutil.ReadAll(resp.Body)
-	// TODO need something to ensure this is all consumed for pipelining
-
 	if resp.StatusCode != 200 {
 		return errors.Errorf("API request not successful. Got status %d", resp.StatusCode)
 	}
@@ -107,23 +100,9 @@ func (rtm *RememberTheMilk) Req(method string, obj interface{}, opts ...reqOpt) 
 		return errors.Wrap(err, "xml unmarshall")
 	}
 
-	/*
-			mv, err := mxj.NewMapXml(body) // unmarshal
-			if err != nil {
-				return nil, errors.Wrap(err, "failed xml unmarshal")
-			}
-			mv.Remove("rsp.api_key")
-
-
-		status, _ := mv.ValueForPathString("rsp.-stat")
-		if status != "ok" {
-			return nil, errors.Errorf("API xml response not OK: %s\n", body)
-		}
-	*/
-
-	//if obj.(genericResponse).Stat != "ok" {
-	//	return errors.Errorf("API xml response not OK: %s\n", resp.Body)
-	//}
+	if err := obj.HasError(); err != nil {
+		return errors.Wrap(err, "API xml response")
+	}
 
 	return nil
 }
