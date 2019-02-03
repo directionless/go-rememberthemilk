@@ -38,12 +38,12 @@ func (rtm *RememberTheMilk) Authenticate() error {
 
 func (rtm *RememberTheMilk) getToken() error {
 	resp := &GetTokenResponse{}
-	if err := rtm.Req("rtm.auth.getToken", resp, Param("frob", rtm.apiFrob)); err != nil {
+	if err := rtm.Req("rtm.auth.getToken", resp, Param("frob", rtm.auth.Frob)); err != nil {
 		return errors.Wrap(err, "failed to get token")
 	}
 
 	//fmt.Println(mv)
-	rtm.apiToken = resp.Auth.Token
+	rtm.auth.Token = resp.Auth.Token
 
 	return nil
 
@@ -64,8 +64,8 @@ func (rtm *RememberTheMilk) humanURL() (string, error) {
 
 	q := req.URL.Query()
 	q.Add("perms", "delete")
-	q.Add("api_key", rtm.apiKey)
-	q.Add("frob", rtm.apiFrob)
+	q.Add("api_key", rtm.auth.Key)
+	q.Add("frob", rtm.auth.Frob)
 
 	//Sign it. Signing is based on the URL param, so we add more, and re-encode
 	req.URL.RawQuery = q.Encode()
@@ -96,7 +96,7 @@ func (rtm *RememberTheMilk) signAuthReq(req *http.Request) string {
 	// Prepend our secret
 	//
 	// This works, because we  left a "" in the array, which has been sorted to the beginning.
-	blobs[0] = rtm.apiSecret
+	blobs[0] = rtm.auth.Secret
 
 	concatSecret := strings.Join(blobs, "")
 
@@ -112,6 +112,6 @@ func (rtm *RememberTheMilk) getFrob() error {
 	if err := rtm.Req("rtm.auth.getFrob", resp); err != nil {
 		return errors.Wrap(err, "failed to get token")
 	}
-	rtm.apiFrob = resp.Frob
+	rtm.auth.Frob = resp.Frob
 	return nil
 }

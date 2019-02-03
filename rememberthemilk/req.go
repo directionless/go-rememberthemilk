@@ -66,9 +66,9 @@ func (rtm *RememberTheMilk) Req(method string, obj ResponseInterface, opts ...re
 	reqOpts.Params.Add("method", method)
 
 	// BUG: This logic sucks Need a way to override
-	reqOpts.Params.Add("api_key", rtm.apiKey)
-	if rtm.apiToken != "" {
-		reqOpts.Params.Add("auth_token", rtm.apiToken)
+	reqOpts.Params.Add("api_key", rtm.auth.Key)
+	if rtm.auth.Token != "" {
+		reqOpts.Params.Add("auth_token", rtm.auth.Token)
 	}
 
 	//for k, v := range params {

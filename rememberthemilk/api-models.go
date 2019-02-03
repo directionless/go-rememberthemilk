@@ -29,7 +29,7 @@ func (ro *ResponseObject) HasError() error {
 	return nil
 }
 
-type ListResponse struct {
+type listResponse struct {
 	*ResponseObject
 	Lists []List `xml:"lists>list"` // Uses the nested structure to collapse these attributes
 }
@@ -42,6 +42,11 @@ type GetTokenResponse struct {
 type GetFrobResponse struct {
 	*ResponseObject
 	Frob string `xml:"frob"`
+}
+
+type checkTokenResponse struct {
+	*ResponseObject
+	Auth Auth `xml:"auth"`
 }
 
 type List struct {
