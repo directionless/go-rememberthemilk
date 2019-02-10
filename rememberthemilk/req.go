@@ -2,10 +2,10 @@ package rememberthemilk
 
 import (
 	"encoding/xml"
-	"fmt"
 	"net/http"
 	"net/url"
 
+	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 )
 
@@ -84,7 +84,10 @@ func (rtm *RememberTheMilk) Req(method string, obj ResponseInterface, opts ...re
 		req.URL.RawQuery = reqOpts.Params.Encode()
 	}
 
-	fmt.Println(req.URL.String())
+	level.Debug(rtm.logger).Log(
+		"msg", "requesting URL",
+		"url", req.URL.String(),
+	)
 
 	resp, err := rtm.httpClient.Do(req)
 	if err != nil {

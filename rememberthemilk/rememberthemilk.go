@@ -10,8 +10,7 @@ import (
 	"net/url"
 	"os"
 
-	//"github.com/clbanning/mxj"
-
+	"github.com/go-kit/kit/log"
 	"github.com/pkg/errors"
 )
 
@@ -21,6 +20,7 @@ type RememberTheMilk struct {
 	authFile  string
 	auth      *authData
 
+	logger     log.Logger
 	httpClient *http.Client
 }
 
@@ -31,7 +31,15 @@ type authData struct {
 	Token  string
 }
 
-func New() (*RememberTheMilk, error) {
+type Option func(*RememberTheMilk)
+
+func WithLogger(logger log.Logger) Option {
+	return func(rtm *RememberTheMilk) {
+		rtm.logger = logger
+	}
+}
+
+func New(opts ...Option) (*RememberTheMilk, error) {
 	baseUrl, err := url.Parse("https://api.rememberthemilk.com")
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing api endpoint url")
@@ -46,6 +54,10 @@ func New() (*RememberTheMilk, error) {
 		baseUrl:    baseUrl,
 		auth:       &authData{Frob: ""},
 		httpClient: httpClient,
+	}
+
+	for _, opt := range opts {
+		opt(rtm)
 	}
 
 	return rtm, nil

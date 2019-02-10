@@ -10,11 +10,12 @@ import (
 	"github.com/go-kit/kit/log/level"
 	"github.com/kolide/kit/logutil"
 	"github.com/peterbourgon/ff"
+	"github.com/peterbourgon/usage"
 )
 
 func main() {
 
-	fs := flag.NewFlagSet("my-program", flag.ExitOnError)
+	fs := flag.NewFlagSet("rtm-list", flag.ExitOnError)
 	var (
 		apiKey    = fs.String("api-key", "", "API Key")
 		apiSecret = fs.String("api-secret", "", "API Shared Secret")
@@ -23,15 +24,22 @@ func main() {
 		_     = fs.String("config", "", "config file (optional)")
 	)
 
+	fs.Usage = usage.For(fs, "rtm-list [flags] [listname]")
+
 	ff.Parse(fs, os.Args[1:],
 		ff.WithConfigFileFlag("config"),
 		ff.WithConfigFileParser(ff.PlainParser),
 		ff.WithEnvVarPrefix("RTM"),
 	)
 
+	if len(os.Args) > 2 {
+		fs.Usage()
+		os.Exit(1)
+	}
+
 	logger := logutil.NewCLILogger(*debug)
 
-	rtm, err := rememberthemilk.New()
+	rtm, err := rememberthemilk.New(rememberthemilk.WithLogger(logger))
 	if err != nil {
 		level.Error(logger).Log(
 			"msg", "Failed to create RTM client",
@@ -76,22 +84,34 @@ func main() {
 		os.Exit(1)
 	}
 
-	testTasks := &rememberthemilk.TasklistResponse{}
+	if len(os.Args) < 2 {
+		spew.Dump(lists)
+		os.Exit(0)
+	}
+
 	for _, list := range lists {
-		if list.Name == "test list" {
+		if stringInSlice(list.Name, os.Args) {
 			listId := fmt.Sprintf("%d", list.ID)
-			if err := rtm.Req("rtm.tasks.getList", testTasks, rememberthemilk.Param("list_id", listId)); err != nil {
+			tasks := &rememberthemilk.TasklistResponse{}
+			if err := rtm.Req("rtm.tasks.getList", tasks, rememberthemilk.Param("list_id", listId)); err != nil {
 				level.Error(logger).Log(
 					"msg", "Unable to get tasks",
 					"err", err,
 				)
 				os.Exit(1)
-
 			}
+			spew.Dump(tasks)
 		}
 
 	}
 
-	spew.Dump(testTasks)
+}
 
+func stringInSlice(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
 }
